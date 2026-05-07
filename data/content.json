@@ -1,0 +1,48 @@
+{
+  "works": [
+    {
+      "title": "个人博客主页",
+      "type": "Web",
+      "category": "web",
+      "description": "简约风格的作品展示入口，包含侧栏、搜索、栏目切换与响应式布局。",
+      "url": "",
+      "keywords": "个人网站 网页 前端 博客"
+    },
+    {
+      "title": "学习主题海报",
+      "type": "Design",
+      "category": "design",
+      "description": "整理课程重点时顺手做的视觉练习，用色块和编号建立阅读节奏。",
+      "url": "",
+      "keywords": "海报 视觉 排版 设计"
+    },
+    {
+      "title": "学习打卡工具",
+      "type": "Code",
+      "category": "code",
+      "description": "记录每日输入与复盘，把任务、知识点和完成状态放在同一页。",
+      "url": "",
+      "keywords": "工具 小应用 JavaScript 代码"
+    }
+  ],
+  "notes": [
+    {
+      "date": "2026-05-01",
+      "title": "CSS Grid 更适合处理页面骨架",
+      "content": "侧栏、主内容、目录这类结构，用 Grid 会比不断嵌套 Flex 更清晰。",
+      "keywords": "CSS 布局 Grid Flex"
+    },
+    {
+      "date": "2026-04-24",
+      "title": "搜索不一定要复杂",
+      "content": "给内容块加上可检索关键词，再用 JavaScript 控制显示状态，就能做出轻量站内搜索。",
+      "keywords": "JavaScript 搜索 筛选"
+    },
+    {
+      "date": "2026-04-18",
+      "title": "作品描述要写清楚为什么",
+      "content": "比起只写用了什么技术，更值得写清目标、取舍和自己负责的部分。",
+      "keywords": "作品集 表达 项目描述"
+    }
+  ]
+}
