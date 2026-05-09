@@ -1,10 +1,10 @@
 {
-  "name": "你的名字",
+  "name": "王博",
   "role": "作品集 / 学习记录",
   "avatar": "/avatar.svg",
   "bio": "这里用于展示我的个人作品、学习笔记和阶段性复盘。以后只需要修改配置文件，就能更新网站内容。",
   "location": "China",
-  "email": "you@example.com",
+  "email": "wangbo@example.com",
   "links": [
     {
       "label": "GitHub",
