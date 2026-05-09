@@ -1,0 +1,16 @@
+{
+  "title": "医学仿真项目",
+  "category": "unity",
+  "summary": "使用untiy制作的医学仿真项目，用于腹腔穿刺考试。",
+  "detail": "这个作品展示了一个配置文件驱动的个人博客。每个作品都是一个独立 JSON 文件，新增文件后会自动生成左侧按钮，点击按钮后展示对应作品详情。",
+  "thumbnail": "works/fqcc.png",
+  "videoUrl": "https://www.bilibili.com/video/BV1VZB7YrEqZ/?spm_id_from=333.1387.homepage.video_card.click",
+  "tags": [
+    "Unity",
+    "医学仿真",
+    "腹腔穿刺"
+  ],
+  "links": [],
+  "featured": true,
+  "order": 1
+}

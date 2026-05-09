@@ -1,0 +1,16 @@
+{
+  "title": "卡牌小游戏",
+  "category": "unity",
+  "summary": "使用 Unity 制作的卡牌小游戏。",
+  "detail": "有前端和后端两部分，前端使用 Unity 制作，后端使用C#实现。部署到阿里云后，玩家可以通过点击卡牌来进行游戏，游戏逻辑由前端处理。",
+  "thumbnail": "works/cuiNiu.png",
+  "videoUrl": "https://www.bilibili.com/video/BV1VZB7YrEqZ/?spm_id_from=333.1387.homepage.video_card.click",
+  "tags": [
+    "Astro",
+    "GitHub Pages",
+    "Content Collections"
+  ],
+  "links": [],
+  "featured": true,
+  "order": 1
+}

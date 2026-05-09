@@ -23,10 +23,12 @@ const works = defineCollection({
   loader: glob({ base: "./src/content/works", pattern: "**/*.{json,yaml,yml}" }),
   schema: z.object({
     title: z.string(),
-    category: z.enum(["web", "design", "code", "writing", "other"]).default("other"),
+    category: z.enum(["web", "design", "code", "writing", "unity", "other"]).default("other"),
     summary: z.string(),
     detail: z.string(),
     cover: z.string().optional(),
+    thumbnail: z.string().optional(),
+    videoUrl: z.string().url().optional(),
     tags: z.array(z.string()).default([]),
     links: z.array(linkSchema).default([]),
     featured: z.boolean().default(false),

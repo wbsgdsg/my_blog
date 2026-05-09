@@ -18,10 +18,63 @@ const notes = (await getCollection("notes"))
   .sort((a, b) => b.date.getTime() - a.date.getTime());
 
 const base = import.meta.env.BASE_URL;
+const contentImages = import.meta.glob<string>("../content/images/**/*.{png,jpg,jpeg,webp,gif,avif}", {
+  eager: true,
+  query: "?url",
+  import: "default"
+});
+
 const assetPath = (value?: string) => {
   if (!value) return "";
   if (value.startsWith("http://") || value.startsWith("https://")) return value;
   return `${base}${value.replace(/^\/+/, "")}`;
+};
+
+const contentImagePath = (value?: string) => {
+  if (!value || value.startsWith("http://") || value.startsWith("https://")) return "";
+
+  const normalized = value.replaceAll("\\", "/").replace(/^\.?\//, "");
+  const imagePath = normalized
+    .replace(/^src\/content\/images\//, "")
+    .replace(/^content\/images\//, "")
+    .replace(/^images\//, "");
+
+  return contentImages[`../content/images/${imagePath}`] ?? "";
+};
+
+const mediaPath = (value?: string) => contentImagePath(value) || assetPath(value);
+
+const videoEmbedUrl = (value?: string, autoplay = false) => {
+  if (!value) return "";
+
+  try {
+    const url = new URL(value);
+    const bvid = videoBvid(value);
+
+    if (url.hostname.includes("bilibili.com") && bvid) {
+      const params = new URLSearchParams({
+        bvid,
+        page: "1",
+        autoplay: autoplay ? "1" : "0",
+        muted: autoplay ? "1" : "0"
+      });
+      return `https://player.bilibili.com/player.html?${params.toString()}`;
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+};
+
+const videoBvid = (value?: string) => {
+  if (!value) return "";
+
+  try {
+    return new URL(value).pathname.split("/").find((part) => /^BV[a-zA-Z0-9]+$/.test(part)) ?? "";
+  } catch {
+    return "";
+  }
 };
 ---
 
@@ -31,6 +84,8 @@ const assetPath = (value?: string) => {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={profile.bio} />
+    <link rel="preconnect" href="https://player.bilibili.com" />
+    <link rel="dns-prefetch" href="https://player.bilibili.com" />
     <title>{profile.name} | 作品与学习笔记</title>
   </head>
   <body>
@@ -85,51 +140,88 @@ const assetPath = (value?: string) => {
             <span>{works.length} 个配置文件</span>
           </div>
 
-          <div class="content-layout">
-            <div class="item-list" role="tablist" aria-label="作品列表">
-              {
-                works.map((work, index) => (
-                  <button
-                    class:list={["item-button", index === 0 && "active"]}
-                    type="button"
-                    data-item-trigger="work"
-                    data-item-id={work.id}
-                  >
-                    <strong>{work.title}</strong>
-                    <span>{work.summary}</span>
-                  </button>
-                ))
-              }
-            </div>
-
-            <div class="detail-panel">
-              {
-                works.length ? (
-                  works.map((work, index) => (
-                    <article class:list={["detail-card", index === 0 && "active"]} data-item-panel="work" data-item-id={work.id}>
-                      <div class="cover" style={`--cover-image: url('${assetPath(work.cover)}')`}></div>
-                      <p class="eyebrow">{work.category}</p>
-                      <h2>{work.title}</h2>
-                      <p>{work.detail}</p>
-                      <div class="tag-row">
-                        {work.tags.map((tag) => <span>{tag}</span>)}
+          {
+            works.length ? (
+              <div class="work-grid" data-work-grid aria-label="作品视频列表">
+                {
+                  works.map((work) => (
+                    <article
+                      class="work-card"
+                      role="button"
+                      tabindex="0"
+                      data-work-card
+                      data-work-id={work.id}
+                      aria-label={`查看 ${work.title} 的项目详情`}
+                    >
+                      <div class="work-video-frame">
+                        {
+                          work.thumbnail || work.cover ? (
+                            <img src={mediaPath(work.thumbnail || work.cover)} alt={`${work.title} 视频封面`} loading="eager" />
+                          ) : work.videoUrl && videoBvid(work.videoUrl) ? (
+                            <div class="thumbnail-placeholder" data-bilibili-cover={videoBvid(work.videoUrl)} aria-label={`${work.title} 视频封面`}>
+                              <span>{work.title}</span>
+                            </div>
+                          ) : (
+                            <div class="thumbnail-placeholder" aria-hidden="true">
+                              <span>{work.title}</span>
+                            </div>
+                          )
+                        }
+                        <div class="work-card-copy">
+                          <h2>{work.title}</h2>
+                          <p>{work.summary}</p>
+                        </div>
                       </div>
-                      <div class="link-row">
-                        {work.links.map((link) => (
-                          <a href={link.url} target="_blank" rel="noreferrer">{link.label}</a>
-                        ))}
+
+                      <div class="work-detail">
+                        <button class="back-button" type="button" data-work-back>返回</button>
+
+                        <header class="detail-header">
+                          <h2>{work.title}</h2>
+                        </header>
+
+                        <p class="detail-text">{work.detail}</p>
+
+                        <div class="detail-video">
+                          {
+                            work.videoUrl ? (
+                              <iframe
+                                title={`${work.title} 项目视频`}
+                                data-detail-frame
+                                data-src={videoEmbedUrl(work.videoUrl)}
+                                src="about:blank"
+                                loading="lazy"
+                                allow="autoplay; fullscreen; picture-in-picture"
+                                allowfullscreen
+                              />
+                            ) : work.thumbnail || work.cover ? (
+                              <img src={mediaPath(work.thumbnail || work.cover)} alt={`${work.title} 视频封面`} />
+                            ) : (
+                              <div class="thumbnail-placeholder" aria-hidden="true">
+                                <span>{work.title}</span>
+                              </div>
+                            )
+                          }
+                        </div>
+
+                        <div class="project-links">
+                          {work.links.map((link) => (
+                            <a href={link.url} target="_blank" rel="noreferrer">{link.label}</a>
+                          ))}
+                          {work.videoUrl && <a href={work.videoUrl} target="_blank" rel="noreferrer">原视频</a>}
+                        </div>
                       </div>
                     </article>
                   ))
-                ) : (
-                  <article class="detail-card active">
-                    <h2>还没有作品</h2>
-                    <p>在 src/content/works 里新增 JSON 配置文件后，这里会自动生成按钮和详情。</p>
-                  </article>
-                )
-              }
-            </div>
-          </div>
+                }
+              </div>
+            ) : (
+              <article class="detail-card active">
+                <h2>还没有作品</h2>
+                <p>在 src/content/works 里新增 JSON 配置文件后，这里会自动生成视频卡片和详情。</p>
+              </article>
+            )
+          }
         </section>
 
         <section class="view" id="notes" data-view="notes">
@@ -189,6 +281,9 @@ const assetPath = (value?: string) => {
       const views = document.querySelectorAll<HTMLElement>("[data-view]");
       const itemButtons = document.querySelectorAll<HTMLElement>("[data-item-trigger]");
       const itemPanels = document.querySelectorAll<HTMLElement>("[data-item-panel]");
+      const workGrid = document.querySelector<HTMLElement>("[data-work-grid]");
+      const workCards = document.querySelectorAll<HTMLElement>("[data-work-card]");
+      const bilibiliCoverTargets = document.querySelectorAll<HTMLElement>("[data-bilibili-cover]");
 
       function showView(id: string | undefined) {
         if (!id) return;
@@ -215,6 +310,63 @@ const assetPath = (value?: string) => {
             const sameType = panel.dataset.itemPanel === type;
             panel.classList.toggle("active", sameType && panel.dataset.itemId === id);
           });
+        });
+      });
+
+      bilibiliCoverTargets.forEach(async (target) => {
+        const bvid = target.dataset.bilibiliCover;
+        if (!bvid) return;
+
+        try {
+          const response = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${encodeURIComponent(bvid)}`);
+          const payload = await response.json();
+          const cover = payload?.data?.pic;
+
+          if (typeof cover === "string" && cover) {
+            target.style.setProperty("--thumbnail-image", `url("${cover}")`);
+            target.classList.add("loaded");
+          }
+        } catch {
+          target.classList.add("cover-unavailable");
+        }
+      });
+
+      workCards.forEach((card) => {
+        const detailFrame = card.querySelector<HTMLIFrameElement>("[data-detail-frame]");
+
+
+        const expandCard = () => {
+          workCards.forEach((item) => {
+            item.classList.remove("expanded");
+            item.querySelector<HTMLIFrameElement>("[data-detail-frame]")?.setAttribute("src", "about:blank");
+          });
+
+          workGrid?.classList.add("detail-mode");
+          card.classList.add("expanded");
+          if (detailFrame?.dataset.src) detailFrame.src = detailFrame.dataset.src;
+        };
+
+        const closeDetail = () => {
+          card.classList.remove("expanded");
+          workGrid?.classList.remove("detail-mode");
+          if (detailFrame) detailFrame.src = "about:blank";
+        };
+
+        card.addEventListener("click", (event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest("a")) return;
+          if (target.closest("[data-work-back]")) {
+            closeDetail();
+            return;
+          }
+          expandCard();
+        });
+
+        card.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            expandCard();
+          }
         });
       });
     </script>
@@ -440,6 +592,201 @@ const assetPath = (value?: string) => {
     gap: 18px;
   }
 
+  .work-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  .work-card {
+    min-width: 0;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition:
+      border-color 180ms ease,
+      transform 180ms ease;
+  }
+
+  .work-card:hover,
+  .work-card:focus-visible,
+  .work-card.expanded {
+    border-color: var(--border-strong);
+    outline: 0;
+    transform: translateY(-2px);
+  }
+
+  .work-grid.detail-mode .work-card:not(.expanded),
+  .work-grid:has(.work-card.expanded) .work-card:not(.expanded) {
+    display: none;
+  }
+
+  .work-card.expanded {
+    grid-column: 1 / -1;
+    display: block;
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    cursor: default;
+  }
+
+  .work-video-frame {
+    position: relative;
+    overflow: hidden;
+    background: #ff5c65;
+    aspect-ratio: 16 / 9;
+  }
+
+  .work-video-frame img,
+  .detail-video img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 220ms ease;
+  }
+
+  .work-card:hover .work-video-frame img,
+  .work-card:focus-visible .work-video-frame img,
+  .work-card:hover .thumbnail-placeholder,
+  .work-card:focus-visible .thumbnail-placeholder {
+    transform: scale(1.06);
+  }
+
+  .thumbnail-placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    color: #ffffff;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 58%),
+      var(--thumbnail-image, linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 58%)),
+      #ff5c65;
+    background-position: center;
+    background-size: cover;
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    transition: transform 220ms ease;
+  }
+
+  .thumbnail-placeholder.loaded span {
+    display: none;
+  }
+
+  .work-card-copy {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 72px 22px 20px;
+    color: #ffffff;
+    background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.68));
+    pointer-events: none;
+  }
+
+  .work-card-copy h2 {
+    margin: 0 0 8px;
+    font-size: 23px;
+    line-height: 1.2;
+  }
+
+  .work-card-copy p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.84);
+    line-height: 1.55;
+  }
+
+  .work-detail {
+    display: none;
+    align-content: start;
+    gap: 14px;
+    padding: 22px;
+  }
+
+  .work-card.expanded .work-detail {
+    display: block;
+  }
+
+  .work-card.expanded .work-video-frame,
+  .work-card.expanded .work-card-copy {
+    display: none;
+  }
+
+  .detail-header {
+    margin-top: 26px;
+  }
+
+  .detail-header h2 {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1.2;
+  }
+
+  .detail-text {
+    max-width: 860px;
+    margin: 18px 0 0;
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1.9;
+  }
+
+  .detail-video {
+    overflow: hidden;
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    aspect-ratio: 16 / 9;
+    margin-top: 26px;
+  }
+
+  .detail-video iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  .back-button {
+    min-height: 36px;
+    padding: 0 13px;
+    color: var(--text);
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .back-button:hover,
+  .back-button:focus-visible {
+    background: var(--surface-hover);
+    outline: 0;
+  }
+
+  .project-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .project-links a {
+    min-height: 38px;
+    display: inline-grid;
+    place-items: center;
+    padding: 0 14px;
+    color: var(--text);
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
   .item-list {
     display: grid;
     align-content: start;
@@ -486,6 +833,13 @@ const assetPath = (value?: string) => {
     background-size: cover;
     background-position: center;
     border: 1px solid var(--border);
+  }
+
+  .cover.compact {
+    height: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
   }
 
   .tag-row,
@@ -549,8 +903,21 @@ const assetPath = (value?: string) => {
     }
 
     .content-layout,
+    .work-grid,
     .profile-grid {
       grid-template-columns: 1fr;
+    }
+
+    .work-detail {
+      padding: 16px;
+    }
+
+    .detail-header h2 {
+      font-size: 28px;
+    }
+
+    .detail-text {
+      font-size: 16px;
     }
   }
 </style>
