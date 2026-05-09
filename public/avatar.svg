@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Avatar">
+  <rect width="128" height="128" rx="64" fill="#f4f4f4"/>
+  <circle cx="64" cy="54" r="26" fill="#111"/>
+  <path d="M28 114c6-25 20-38 36-38s30 13 36 38" fill="#111"/>
+  <circle cx="54" cy="53" r="4" fill="#fff"/>
+  <circle cx="74" cy="53" r="4" fill="#fff"/>
+</svg>

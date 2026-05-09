@@ -1,0 +1,15 @@
+{
+  "title": "个人博客框架",
+  "category": "web",
+  "summary": "使用 Astro Content Collections 驱动内容。",
+  "detail": "这个作品展示了一个配置文件驱动的个人博客。每个作品都是一个独立 JSON 文件，新增文件后会自动生成左侧按钮，点击按钮后展示对应作品详情。",
+  "tags": ["Astro", "GitHub Pages", "Content Collections"],
+  "links": [
+    {
+      "label": "项目仓库",
+      "url": "https://github.com/yourname/my-blog"
+    }
+  ],
+  "featured": true,
+  "order": 1
+}

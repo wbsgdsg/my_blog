@@ -1,0 +1,556 @@
+---
+import { getCollection } from "astro:content";
+
+const profileEntry = (await getCollection("profile"))[0];
+const profile = profileEntry?.data ?? {
+  name: "你的名字",
+  role: "Portfolio",
+  bio: "记录作品、学习和成长。",
+  links: []
+};
+
+const works = (await getCollection("works"))
+  .map((entry) => ({ id: entry.id, ...entry.data }))
+  .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title, "zh-CN"));
+
+const notes = (await getCollection("notes"))
+  .map((entry) => ({ id: entry.id, ...entry.data }))
+  .sort((a, b) => b.date.getTime() - a.date.getTime());
+
+const base = import.meta.env.BASE_URL;
+const assetPath = (value?: string) => {
+  if (!value) return "";
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+  return `${base}${value.replace(/^\/+/, "")}`;
+};
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={profile.bio} />
+    <title>{profile.name} | 作品与学习笔记</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="站点导航">
+        <a class="brand" href="#profile" data-view-trigger="profile">
+          <span class="avatar-wrap">
+            <img src={assetPath(profile.avatar || "avatar.svg")} alt={`${profile.name} 的头像`} />
+          </span>
+          <span>
+            <strong>{profile.name}</strong>
+            <small>{profile.role || "Portfolio"}</small>
+          </span>
+        </a>
+
+        <nav class="nav-list">
+          <button class="nav-button active" type="button" data-view-trigger="profile">个人资料</button>
+          <button class="nav-button" type="button" data-view-trigger="works">个人作品</button>
+          <button class="nav-button" type="button" data-view-trigger="notes">学习笔记</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          {
+            profile.links.map((link) => (
+              <a href={link.url} target="_blank" rel="noreferrer">{link.label}</a>
+            ))
+          }
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <section class="view active" id="profile" data-view="profile">
+          <p class="eyebrow">Profile</p>
+          <h1>{profile.name}</h1>
+          <p class="lead">{profile.bio}</p>
+
+          <div class="profile-grid">
+            {profile.role && <div><span>身份</span><strong>{profile.role}</strong></div>}
+            {profile.location && <div><span>位置</span><strong>{profile.location}</strong></div>}
+            {profile.email && <div><span>邮箱</span><strong>{profile.email}</strong></div>}
+            <div><span>作品数</span><strong>{works.length}</strong></div>
+            <div><span>笔记数</span><strong>{notes.length}</strong></div>
+          </div>
+        </section>
+
+        <section class="view" id="works" data-view="works">
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Works</p>
+              <h1>个人作品</h1>
+            </div>
+            <span>{works.length} 个配置文件</span>
+          </div>
+
+          <div class="content-layout">
+            <div class="item-list" role="tablist" aria-label="作品列表">
+              {
+                works.map((work, index) => (
+                  <button
+                    class:list={["item-button", index === 0 && "active"]}
+                    type="button"
+                    data-item-trigger="work"
+                    data-item-id={work.id}
+                  >
+                    <strong>{work.title}</strong>
+                    <span>{work.summary}</span>
+                  </button>
+                ))
+              }
+            </div>
+
+            <div class="detail-panel">
+              {
+                works.length ? (
+                  works.map((work, index) => (
+                    <article class:list={["detail-card", index === 0 && "active"]} data-item-panel="work" data-item-id={work.id}>
+                      <div class="cover" style={`--cover-image: url('${assetPath(work.cover)}')`}></div>
+                      <p class="eyebrow">{work.category}</p>
+                      <h2>{work.title}</h2>
+                      <p>{work.detail}</p>
+                      <div class="tag-row">
+                        {work.tags.map((tag) => <span>{tag}</span>)}
+                      </div>
+                      <div class="link-row">
+                        {work.links.map((link) => (
+                          <a href={link.url} target="_blank" rel="noreferrer">{link.label}</a>
+                        ))}
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <article class="detail-card active">
+                    <h2>还没有作品</h2>
+                    <p>在 src/content/works 里新增 JSON 配置文件后，这里会自动生成按钮和详情。</p>
+                  </article>
+                )
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="notes" data-view="notes">
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Notes</p>
+              <h1>学习笔记</h1>
+            </div>
+            <span>{notes.length} 个配置文件</span>
+          </div>
+
+          <div class="content-layout">
+            <div class="item-list" role="tablist" aria-label="学习笔记列表">
+              {
+                notes.map((note, index) => (
+                  <button
+                    class:list={["item-button", index === 0 && "active"]}
+                    type="button"
+                    data-item-trigger="note"
+                    data-item-id={note.id}
+                  >
+                    <strong>{note.title}</strong>
+                    <span>{note.summary}</span>
+                  </button>
+                ))
+              }
+            </div>
+
+            <div class="detail-panel">
+              {
+                notes.length ? (
+                  notes.map((note, index) => (
+                    <article class:list={["detail-card", index === 0 && "active"]} data-item-panel="note" data-item-id={note.id}>
+                      <p class="eyebrow">{note.date.toLocaleDateString("zh-CN")}</p>
+                      <h2>{note.title}</h2>
+                      <p>{note.content}</p>
+                      <div class="tag-row">
+                        {note.tags.map((tag) => <span>{tag}</span>)}
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <article class="detail-card active">
+                    <h2>还没有笔记</h2>
+                    <p>在 src/content/notes 里新增 JSON 配置文件后，这里会自动显示。</p>
+                  </article>
+                )
+              }
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const viewButtons = document.querySelectorAll<HTMLElement>("[data-view-trigger]");
+      const views = document.querySelectorAll<HTMLElement>("[data-view]");
+      const itemButtons = document.querySelectorAll<HTMLElement>("[data-item-trigger]");
+      const itemPanels = document.querySelectorAll<HTMLElement>("[data-item-panel]");
+
+      function showView(id: string | undefined) {
+        if (!id) return;
+
+        viewButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.viewTrigger === id);
+        });
+        views.forEach((view) => view.classList.toggle("active", view.dataset.view === id));
+      }
+
+      viewButtons.forEach((button) => {
+        button.addEventListener("click", () => showView(button.dataset.viewTrigger));
+      });
+
+      itemButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const type = button.dataset.itemTrigger;
+          const id = button.dataset.itemId;
+
+          document.querySelectorAll(`[data-item-trigger="${type}"]`).forEach((item) => {
+            item.classList.toggle("active", item === button);
+          });
+          itemPanels.forEach((panel) => {
+            const sameType = panel.dataset.itemPanel === type;
+            panel.classList.toggle("active", sameType && panel.dataset.itemId === id);
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --sidebar: #f9f9f9;
+    --surface: #ffffff;
+    --surface-soft: #f4f4f4;
+    --surface-hover: #eeeeee;
+    --border: #e5e5e5;
+    --border-strong: #d6d6d6;
+    --text: #111111;
+    --muted: #6f6f6f;
+    --shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    background: var(--bg);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font: inherit;
+  }
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+  }
+
+  .brand {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .brand:hover,
+  .nav-button:hover,
+  .nav-button.active,
+  .item-button:hover,
+  .item-button.active {
+    background: var(--surface-hover);
+  }
+
+  .avatar-wrap {
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+  }
+
+  .avatar-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .brand strong,
+  .brand small {
+    display: block;
+  }
+
+  .brand small,
+  .sidebar-footer,
+  .view-heading span,
+  .item-button span,
+  .lead,
+  .detail-card p,
+  .profile-grid span {
+    color: var(--muted);
+  }
+
+  .nav-list {
+    display: grid;
+    gap: 4px;
+    margin-top: 18px;
+  }
+
+  .nav-button,
+  .item-button {
+    width: 100%;
+    border: 0;
+    color: var(--text);
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    border-radius: 10px;
+  }
+
+  .nav-button {
+    min-height: 38px;
+    padding: 9px 12px;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: auto;
+    padding: 12px 8px;
+    font-size: 14px;
+  }
+
+  .main-panel {
+    min-width: 0;
+    display: grid;
+    align-items: center;
+    min-height: 100vh;
+    padding: 48px 28px;
+  }
+
+  .view {
+    display: none;
+    width: min(980px, 100%);
+    margin: 0 auto;
+  }
+
+  .view.active {
+    display: block;
+  }
+
+  .eyebrow {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  h1,
+  h2,
+  p {
+    overflow-wrap: anywhere;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(32px, 5vw, 48px);
+    line-height: 1.1;
+    font-weight: 650;
+  }
+
+  h2 {
+    margin: 0 0 12px;
+    font-size: 28px;
+    line-height: 1.2;
+  }
+
+  .lead {
+    max-width: 680px;
+    margin: 18px 0 0;
+    font-size: 18px;
+    line-height: 1.8;
+  }
+
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 34px;
+  }
+
+  .profile-grid div,
+  .detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .profile-grid div {
+    display: grid;
+    gap: 8px;
+    padding: 18px;
+  }
+
+  .profile-grid strong {
+    font-size: 18px;
+  }
+
+  .view-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: end;
+    margin-bottom: 22px;
+  }
+
+  .content-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .item-list {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+  }
+
+  .item-button {
+    display: grid;
+    gap: 6px;
+    padding: 13px;
+    border: 1px solid transparent;
+  }
+
+  .item-button strong,
+  .item-button span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .detail-card {
+    display: none;
+    min-height: 430px;
+    padding: 24px;
+  }
+
+  .detail-card.active {
+    display: block;
+  }
+
+  .detail-card p {
+    margin: 0;
+    line-height: 1.8;
+  }
+
+  .cover {
+    height: 180px;
+    margin-bottom: 22px;
+    border-radius: 14px;
+    background:
+      linear-gradient(135deg, rgba(0, 0, 0, 0.07), transparent 58%),
+      var(--cover-image),
+      var(--surface-soft);
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--border);
+  }
+
+  .tag-row,
+  .link-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .tag-row span,
+  .link-row a {
+    min-height: 32px;
+    display: inline-grid;
+    place-items: center;
+    padding: 0 12px;
+    color: var(--muted);
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 14px;
+  }
+
+  .link-row a {
+    color: var(--text);
+  }
+
+  @media (max-width: 860px) {
+    .app-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+      position: sticky;
+      z-index: 5;
+      height: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand,
+    .sidebar-footer {
+      display: none;
+    }
+
+    .nav-list {
+      display: flex;
+      gap: 6px;
+      margin-top: 0;
+      overflow-x: auto;
+    }
+
+    .nav-button {
+      width: auto;
+      white-space: nowrap;
+    }
+
+    .main-panel {
+      min-height: calc(100vh - 63px);
+      padding: 32px 16px;
+    }
+
+    .content-layout,
+    .profile-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
